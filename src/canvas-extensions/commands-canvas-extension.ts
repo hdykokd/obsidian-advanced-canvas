@@ -1,7 +1,7 @@
 import { Canvas } from "src/@types/Canvas"
 import AdvancedCanvasPlugin from "src/main"
 import * as CanvasHelper from "src/utils/canvas-helper"
-import { FileSelectModal } from "src/utils/modal-helper"
+import { FileSelectModal, TagSelectModal } from "src/utils/modal-helper"
 
 type Direction = 'up' | 'down' | 'left' | 'right'
 const DIRECTIONS = ['up', 'down', 'left', 'right'] as Direction[]
@@ -31,6 +31,16 @@ export default class CommandsCanvasExtension {
         this.plugin,
         (canvas: Canvas) => !canvas.readonly,
         (canvas: Canvas) => this.createFileNode(canvas)
+      )
+    })
+
+    this.plugin.addCommand({
+      id: 'create-file-nodes-matching-specified-tag',
+      name: 'Create file nodes matching a specified tag',
+      checkCallback: CanvasHelper.canvasCommand(
+        this.plugin,
+        (canvas: Canvas) => !canvas.readonly,
+        (canvas: Canvas) => this.createFileNodesMatchingTag(canvas)
       )
     })
 
@@ -92,6 +102,20 @@ export default class CommandsCanvasExtension {
     const file = await new FileSelectModal(this.plugin.app, undefined, true).awaitInput()
 
     canvas.createFileNode({ pos: pos, size: size, file: file })
+  }
+
+  private async createFileNodesMatchingTag(canvas: Canvas) {
+    const size = canvas.config.defaultFileNodeDimensions
+    const pos = CanvasHelper.getCenterCoordinates(canvas, size)
+    const files = await new TagSelectModal(this.plugin.app).awaitInput()
+
+	files.forEach((file, index) => {
+		const _pos = {
+			x: pos.x + (index * (size.width / 2)),
+			y: pos.y + (index * (size.height / 10)),
+		}
+		canvas.createFileNode({ pos: _pos, size: size, file: file })
+	})
   }
 
   private cloneNode(canvas: Canvas, cloneDirection: Direction) {
